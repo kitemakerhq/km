@@ -99,6 +99,3 @@ async fn main() -> Result<(), reqwest::Error> {
 
     Ok(())
 }
-
-
-// Bot: app_HU6AW9oRE7KvqI0a1Mihc4rXQN3xL5fp
