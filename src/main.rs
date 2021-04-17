@@ -21,7 +21,7 @@ struct Cli {
 enum Commands {
     /// List organization name and ID
     Organization,
-    /// List all work items in a space
+    /// List all spaces in the organization
     Spaces,
 }
 
