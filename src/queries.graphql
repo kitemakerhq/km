@@ -1,0 +1,28 @@
+query OrgQuery {
+  organization {
+    id
+    name
+  }
+}
+
+query SpaceQuery {
+  organization {
+    id
+    name
+    spaces {
+      id
+      name
+      labels {
+        id
+        name
+        color
+      }
+      statuses {
+        id
+        name
+        type
+        default
+      }
+    }
+  }
+}
