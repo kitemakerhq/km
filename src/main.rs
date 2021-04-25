@@ -24,10 +24,8 @@ struct Cli {
 
 #[derive(StructOpt)]
 enum Commands {
-    /// List organization name and ID
+    /// List organization name and all spaces
     Organization,
-    /// List all spaces in the organization
-    Spaces,
     /// Work items subcommands
     Item(SubCommands),
 }
@@ -53,16 +51,7 @@ enum Item {
     },
 }
 
-//
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "src/kitemaker.graphql",
-    query_path = "src/queries.graphql",
-    response_derives = "Debug"
-)]
-struct OrgQuery;
-
-
+// GraphQL queries
 #[derive(GraphQLQuery)]
 #[graphql(
     schema_path = "src/kitemaker.graphql",
@@ -88,7 +77,7 @@ async fn main() -> Result<(), reqwest::Error> {
 
     match args.cmd {
         Commands::Organization => {
-            let q = OrgQuery::build_query( org_query::Variables {});
+            let q = SpaceQuery::build_query( space_query::Variables {});
 
             let res = client
                 .post("https://toil.kitemaker.co/developers/graphql")
@@ -99,36 +88,18 @@ async fn main() -> Result<(), reqwest::Error> {
 
             res.error_for_status_ref()?;
 
-            let response_body: Response<org_query::ResponseData> = res.json().await?;
-            
-
-            let response_data: org_query::ResponseData = response_body.data.expect("missing response data");
-            
-            println!("{:} {:}", response_data.organization.name.bold(), response_data.organization.id.italic());
-        }
-
-
-        Commands::Spaces => {
-            let q = SpaceQuery::build_query( space_query::Variables {});
-
-            let res = client
-                .post("https://toil.kitemaker.co/developers/graphql")
-                .bearer_auth(args.token.to_string())
-                .json(&q)
-                .send().await?;
-
-
-            res.error_for_status_ref()?;
-
             let response_body: Response<space_query::ResponseData> = res.json().await?;
-            
+    
             let response_data: space_query::ResponseData = response_body.data.expect("missing response data");
+            
+            println!("{:}", response_data.organization.name.bold());
 
-            println!("{}\t\t{}", "Key".bold().underline(),"Name".bold().underline());
+            println!("{:<15}{:}", "Key".bold().underline(),"Space name".bold().underline());
             for space in response_data.organization.spaces.iter() {
-                println!("{:}\t\t{:}",space.key.yellow(), space.name.bold());
+                println!("{:<15}{:}",space.key.yellow(), space.name.bold());
             }
         }
+
 
         Commands::Item(arg) => {
             
