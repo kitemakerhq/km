@@ -11,6 +11,7 @@ query SpaceQuery {
     name
     spaces {
       id
+      key
       name
       labels {
         id
@@ -22,6 +23,27 @@ query SpaceQuery {
         name
         type
         default
+      }
+    }
+  }
+}
+
+query ItemsQuery($spaceId: ID!) {
+  workItems(spaceId: $spaceId) {
+    workItems {
+      id
+      number
+      title
+
+      status {
+        id
+        name
+      }
+
+      labels {
+        id
+        name
+        color
       }
     }
   }

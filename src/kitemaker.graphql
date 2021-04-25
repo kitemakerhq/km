@@ -1,444 +1,500 @@
 scalar Date
 
-  """
-  T-shirt sizing for effort
-  """
-  enum EffortSize {
-    SMALL
-    MEDIUM
-    LARGE
-  }
+"""
+T-shirt sizing for effort
+"""
+enum EffortSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
 
+"""
+T-shirt sizing for impact
+"""
+enum ImpactSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+"""
+Different types of integrations, mainly useful for when fetching and displaying [Integration](#integration) and [IntegrationUser](#integrationuser) objects
+"""
+enum IntegrationType {
+  GITHUB
+  FIGMA
+  TRELLO
+  SLACK
+  DISCORD
+}
+
+"""
+Statuses for [WorkItem](#workitem) objects fall into a few different categories
+"""
+enum StatusType {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  DONE
+  ARCHIVED
+}
+
+"""
+The fixed set of time horizons for [Theme](#theme) objects
+"""
+enum ThemeHorizon {
+  NOW
+  NEXT
+  LATER
+  ARCHIVED
+}
+
+"""
+The top level object describing the user or application's organization
+"""
+type Organization {
+  id: ID!
+  name: String!
+  spaces: [Space!]!
+  users: [User!]!
+  integrations: [Integration!]!
+  integrationUsers: [IntegrationUser!]!
+  updatedAt: Date!
+  createdAt: Date!
+}
+
+type Space {
+  id: ID!
+  key: String!
+  name: String!
+  labels: [Label!]!
+  statuses: [Status!]!
+  updatedAt: Date!
+  createdAt: Date!
+}
+
+type Label {
+  id: ID!
+  color: String!
+  name: String!
+  updatedAt: Date!
+  createdAt: Date!
+}
+
+type Status {
+  id: ID!
+  name: String!
+  type: StatusType!
+  default: Boolean!
+}
+
+type User {
+  id: ID!
+  username: String!
+  name: String
+  avatar: String
+  updatedAt: Date!
+  createdAt: Date!
+}
+
+type Integration {
+  id: ID!
+  type: IntegrationType!
+  domain: String
+  updatedAt: Date!
+  createdAt: Date!
+}
+
+type IntegrationUser {
+  id: ID!
+  type: IntegrationType!
   """
-  T-shirt sizing for impact
+  The domain of a particular integration for systems like GitHub enterprise where each customer has a dedicated URL
   """
-  enum ImpactSize {
-    SMALL
-    MEDIUM
-    LARGE
-  }
-
+  domain: String
   """
-  Different types of integrations, mainly useful for when fetching and displaying [Integration](#integration) and [IntegrationUser](#integrationuser) objects
+  The ID of the user in the external system (such as Slack or GitHub)
   """
-  enum IntegrationType {
-    GITHUB
-    FIGMA
-    TRELLO
-    SLACK
-    DISCORD
-  }
-
+  externalId: String!
   """
-  Statuses for [WorkItem](#workitem) objects fall into a few different categories
+  The name of the user in the external system (such as Slack or GitHub)
   """
-  enum StatusType {
-    BACKLOG
-    TODO
-    IN_PROGRESS
-    DONE
-    ARCHIVED
-  }
+  externalName: String!
+  updatedAt: Date!
+  createdAt: Date!
+}
 
+"""
+Applications represent some service/code/etc that integrates with Kitemaker. You maybe even have one if you're reading these documents
+"""
+type Application {
+  id: ID!
+  name: String!
+  updatedAt: Date!
+  createdAt: Date!
+}
+
+"""
+Actors are entities that do things like create work items, leave comments, etc. They can come in a number of flavors
+"""
+union Actor = User | Integration | IntegrationUser | Application
+
+"""
+Entities are the document-like types, like work items and themes
+"""
+union Entity = WorkItem | Theme
+
+"""
+Comments can be made on either [WorkItem](#workitem) or [Theme](#theme) objects
+"""
+type Comment {
+  id: ID!
+  actor: Actor!
+  body: String!
   """
-  The fixed set of time horizons for [Theme](#theme) objects
+  Comments in Kitemaker are threaded and the threadId identifies a set of comments in a single thread
   """
-  enum ThemeHorizon {
-    NOW
-    NEXT
-    LATER
-    ARCHIVED
-  }
+  threadId: String!
+  entity: Entity!
+  updatedAt: Date!
+  createdAt: Date!
+}
 
+type WorkItem {
+  id: ID!
+  number: String!
+  title: String!
+  actor: Actor!
   """
-  The top level object describing the user or application's organization
+  The description of a work item as a markdown-formatted string
   """
-  type Organization {
-    id: ID!
-    name: String!
-    spaces: [Space!]!
-    users: [User!]!
-    integrations: [Integration!]!
-    integrationUsers: [IntegrationUser!]!
-    updatedAt: Date!
-    createdAt: Date!
-  }
-
-  type Space {
-    id: ID!
-    name: String!
-    labels: [Label!]!
-    statuses: [Status!]!
-    updatedAt: Date!
-    createdAt: Date!
-  }
-
-  type Label {
-    id: ID!
-    color: String!
-    name: String!
-    updatedAt: Date!
-    createdAt: Date!
-  }
-
-  type Status {
-    id: ID!
-    name: String!
-    type: StatusType!
-    default: Boolean!
-  }
-
-  type User {
-    id: ID!
-    username: String!
-    name: String
-    avatar: String
-    updatedAt: Date!
-    createdAt: Date!
-  }
-
-  type Integration {
-    id: ID!
-    type: IntegrationType!
-    domain: String
-    updatedAt: Date!
-    createdAt: Date!
-  }
-
-  type IntegrationUser {
-    id: ID!
-    type: IntegrationType!
-    """
-    The domain of a particular integration for systems like GitHub enterprise where each customer has a dedicated URL
-    """
-    domain: String
-    """
-    The ID of the user in the external system (such as Slack or GitHub)
-    """
-    externalId: String!
-    """
-    The name of the user in the external system (such as Slack or GitHub)
-    """
-    externalName: String!
-    updatedAt: Date!
-    createdAt: Date!
-  }
-
+  description: String!
+  status: Status!
   """
-  Applications represent some service/code/etc that integrates with Kitemaker. You maybe even have one if you're reading these documents
+  Sort is a string that determines where in a particular status column a work item will appear
   """
-  type Application {
-    id: ID!
-    name: String!
-    updatedAt: Date!
-    createdAt: Date!
-  }
+  sort: String!
+  members: [User!]!
+  watchers: [User!]!
+  labels: [Label!]!
+  comments: [Comment!]!
+  effort: EffortSize
+  impact: ImpactSize
+  updatedAt: Date!
+  createdAt: Date!
+}
 
+type Theme {
+  id: ID!
+  number: String!
+  title: String!
+  actor: Actor!
   """
-  Actors are entities that do things like create work items, leave comments, etc. They can come in a number of flavors
+  The description of a theme as a markdown-formatted string
   """
-  union Actor = User | Integration | IntegrationUser | Application
-
+  description: String!
   """
-  Entities are the document-like types, like work items and themes
+  Sort is a string that determines where in a particular horizon column a theme will appear
   """
-  union Entity = WorkItem | Theme
+  sort: String!
+  horizon: ThemeHorizon!
+  workItems: [WorkItem!]!
+  comments: [Comment!]!
+  watchers: [User!]!
+  updatedAt: Date!
+  createdAt: Date!
+}
 
+type WorkItemsQueryResult {
+  workItems: [WorkItem!]!
   """
-  Comments can be made on either [WorkItem](#workitem) or [Theme](#theme) objects
+  An opaque string used for paging. Pass this string to the workItems query to iterate through the results a page at a time
   """
-  type Comment {
-    id: ID!
-    actor: Actor!
-    body: String!
-    """
-    Comments in Kitemaker are threaded and the threadId identifies a set of comments in a single thread
-    """
-    threadId: String!
-    entity: Entity!
-    updatedAt: Date!
-    createdAt: Date!
-  }
+  cursor: String!
+  """
+  Indicates if more results are available (by requerying workItems, passing the cursor)
+  """
+  hasMore: Boolean!
+}
 
-  type WorkItem {
-    id: ID!
-    number: String!
-    title: String!
-    actor: Actor!
-    """
-    The description of a work item as a markdown-formatted string
-    """
-    description: String!
-    status: Status!
-    """
-    Sort is a string that determines where in a particular status column a work item will appear
-    """
-    sort: String!
-    members: [User!]!
-    watchers: [User!]!
-    labels: [Label!]!
-    comments: [Comment!]!
-    effort: EffortSize
-    impact: ImpactSize
-    updatedAt: Date!
-    createdAt: Date!
-  }
+type ThemesQueryResult {
+  themes: [Theme!]!
+  """
+  An opaque string used for paging. Pass this string to the themes query to iterate through the results a page at a time
+  """
+  cursor: String!
+  """
+  Indicates if more results are available (by requerying themes, passing the cursor)
+  """
+  hasMore: Boolean!
+}
 
-  type Theme {
-    id: ID!
-    number: String!
-    title: String!
-    actor: Actor!
-    """
-    The description of a theme as a markdown-formatted string
-    """
-    description: String!
-    """
-    Sort is a string that determines where in a particular horizon column a theme will appear
-    """
-    sort: String!
-    horizon: ThemeHorizon!
-    workItems: [WorkItem!]!
-    comments: [Comment!]!
-    watchers: [User!]!
-    updatedAt: Date!
-    createdAt: Date!
-  }
+type Query {
+  """
+  Fetch the main organization object. Useful for finding out which users, spaces, labels, statuses, etc. are available before fetching and manipulating work items and themes
+  """
+  organization: Organization!
+  """
+  Fetch [WorkItem](#workitem) objects for a particular [Space](#space). This will return at most 50 work items at a time so use the paging facilities to fetch more results
+  """
+  workItems(spaceId: ID, cursor: String, count: Int): WorkItemsQueryResult!
+  """
+  Fetch a single [WorkItem](#workitem) by ID
+  """
+  workItem(id: ID!): WorkItem!
+  """
+  Fetch [Theme](#theme) objects for a particular [Space](#space). This will return at most 50 themes at a time so use the paging facilities to fetch more results
+  """
+  themes(spaceId: ID, cursor: String, count: Int): ThemesQueryResult!
+  """
+  Fetch a single [Theme](#theme) by ID
+  """
+  theme(id: ID!): Theme!
+  """
+  Fetch a single [Comment](#comment) by ID
+  """
+  comment(id: ID!): Comment!
+}
 
-  type WorkItemsQueryResult {
-    workItems: [WorkItem!]!
-    """
-    An opaque string used for paging. Pass this string to the workItems query to iterate through the results a page at a time
-    """
-    cursor: String!
-    """
-    Indicates if more results are available (by requerying workItems, passing the cursor)
-    """
-    hasMore: Boolean!
-  }
+input CreateWorkItemInput {
+  title: String!
+  """
+  The [WorkItem](#workitem) object's description as a markdown-formatted string
+  """
+  description: String
+  statusId: ID!
+  """
+  The sort order of the [WorkItem](#workitem). Omitting this parameter will make the work item the first work item in the status column
+  """
+  sort: String
+  memberIds: [ID!]
+  watcherIds: [ID!]
+  labelIds: [ID!]
+  effort: EffortSize
+  impact: ImpactSize
+}
 
-  type ThemesQueryResult {
-    themes: [Theme!]!
-    """
-    An opaque string used for paging. Pass this string to the themes query to iterate through the results a page at a time
-    """
-    cursor: String!
-    """
-    Indicates if more results are available (by requerying themes, passing the cursor)
-    """
-    hasMore: Boolean!
-  }
+type CreateWorkItemResult {
+  workItem: WorkItem!
+}
 
-  type Query {
-    """
-    Fetch the main organization object. Useful for finding out which users, spaces, labels, statuses, etc. are available before fetching and manipulating work items and themes
-    """
-    organization: Organization!
-    """
-    Fetch [WorkItem](#workitem) objects for a particular [Space](#space). This will return at most 50 work items at a time so use the paging facilities to fetch more results
-    """
-    workItems(spaceId: ID, cursor: String, count: Int): WorkItemsQueryResult!
-    """
-    Fetch a single [WorkItem](#workitem) by ID
-    """
-    workItem(id: ID!): WorkItem!
-    """
-    Fetch [Theme](#theme) objects for a particular [Space](#space). This will return at most 50 themes at a time so use the paging facilities to fetch more results
-    """
-    themes(spaceId: ID, cursor: String, count: Int): ThemesQueryResult!
-    """
-    Fetch a single [Theme](#theme) by ID
-    """
-    theme(id: ID!): Theme!
-    """
-    Fetch a single [Comment](#comment) by ID
-    """
-    comment(id: ID!): Comment!
-  }
-  input CreateWorkItemInput {
-    title: String!
-    """
-    The [WorkItem](#workitem) object's description as a markdown-formatted string
-    """
-    description: String
-    statusId: ID!
-    """
-    The sort order of the [WorkItem](#workitem). Omitting this parameter will make the work item the first work item in the status column
-    """
-    sort: String
-    memberIds: [ID!]
-    watcherIds: [ID!]
-    labelIds: [ID!]
-    effort: EffortSize
-    impact: ImpactSize
-  }
-  type CreateWorkItemResult {
-    workItem: WorkItem!
-  }
-  input EditWorkItemInput {
-    id: ID!
-    title: String
-    """
-    The [WorkItem](#workitem) object's description as a markdown-formatted string
-    """
-    description: String
-    statusId: ID
-    sort: String
-    effort: EffortSize
-    impact: ImpactSize
-  }
-  type EditWorkItemResult {
-    workItem: WorkItem!
-  }
-  input AddMembersToWorkItemInput {
-    id: ID!
-    memberIds: [ID!]!
-  }
-  type AddMembersToWorkItemResult {
-    workItem: WorkItem!
-  }
-  input RemoveMembersFromWorkItemInput {
-    id: ID!
-    memberIds: [ID!]!
-  }
-  type RemoveMembersFromWorkItemResult {
-    workItem: WorkItem!
-  }
-  input AddWatchersToWorkItemInput {
-    id: ID!
-    watcherIds: [ID!]!
-  }
-  type AddWatchersToWorkItemResult {
-    workItem: WorkItem!
-  }
-  input RemoveWatchersFromWorkItemInput {
-    id: ID!
-    watcherIds: [ID!]!
-  }
-  type RemoveWatchersFromWorkItemResult {
-    workItem: WorkItem!
-  }
-  input AddLabelsToWorkItemInput {
-    id: ID!
-    labelIds: [ID!]!
-  }
-  type AddLabelsToWorkItemResult {
-    workItem: WorkItem!
-  }
-  input RemoveLabelsFromWorkItemInput {
-    id: ID!
-    labelIds: [ID!]!
-  }
-  type RemoveLabelsFromWorkItemResult {
-    workItem: WorkItem!
-  }
-  input CreateCommentOnWorkItemInput {
-    id: ID!
-    body: String!
-    """
-    When creating a new comment thread, omit this property. Provide this property to add to an existing thread
-    """
-    threadId: String
-  }
-  type CreateCommentOnWorkItemResult {
-    comment: Comment!
-  }
-  input CreateThemeInput {
-    spaceId: ID!
-    title: String!
-    """
-    The sort order of the [Theme](#theme). Omitting this parameter will make the theme the first theme in the horizon column
-    """
-    sort: String
-    """
-    The [Theme](#theme) object's description as a markdown-formatted string
-    """
-    description: String
-    horizon: ThemeHorizon!
-    workItemIds: [ID!]
-    watcherIds: [ID!]
-  }
-  type CreateThemeResult {
-    theme: Theme!
-  }
-  input EditThemeInput {
-    id: ID!
-    title: String
-    """
-    The [Theme](#theme) object's description as a markdown-formatted string
-    """
-    description: String
-    horizon: ThemeHorizon
-  }
-  type EditThemeResult {
-    theme: Theme!
-  }
-  input AddWorkItemsToThemeInput {
-    id: ID!
-    workItemIds: [ID!]!
-  }
-  type AddWorkItemsToThemeResult {
-    theme: Theme!
-  }
-  input RemoveWorkItemsFromThemeInput {
-    id: ID!
-    workItemIds: [ID!]!
-  }
-  type RemoveWorkItemsFromThemeResult {
-    theme: Theme!
-  }
-  input AddWatchersToThemeInput {
-    id: ID!
-    watcherIds: [ID!]!
-  }
-  type AddWatchersToThemeResult {
-    theme: Theme!
-  }
-  input RemoveWatchersFromThemeInput {
-    id: ID!
-    watcherIds: [ID!]!
-  }
-  type RemoveWatchersFromThemeResult {
-    theme: Theme!
-  }
-  input CreateCommentOnThemeInput {
-    id: ID!
-    body: String!
-    """
-    When creating a new comment thread, omit this property. Provide this property to add to an existing thread
-    """
-    threadId: String
-  }
-  type CreateCommentOnThemeResult {
-    comment: Comment!
-  }
-  input EditCommentInput {
-    id: ID!
-    body: String
-  }
-  type EditCommentResult {
-    comment: Comment!
-  }
-  type Mutation {
-    createWorkItem(input: CreateWorkItemInput!): CreateWorkItemResult!
-    editWorkItem(input: EditWorkItemInput!): EditWorkItemResult!
-    addMembersToWorkItem(input: AddMembersToWorkItemInput!): AddMembersToWorkItemResult!
-    removeMembersFromWorkItem(
-      input: RemoveMembersFromWorkItemInput!
-    ): RemoveMembersFromWorkItemResult!
-    addWatchersToWorkItem(input: AddWatchersToWorkItemInput!): AddWatchersToWorkItemResult!
-    removeWatchersFromWorkItem(
-      input: RemoveWatchersFromWorkItemInput!
-    ): RemoveWatchersFromWorkItemResult!
-    addLabelsToWorkItem(input: AddLabelsToWorkItemInput!): AddMembersToWorkItemResult!
-    removeLabelsFromWorkItem(input: RemoveLabelsFromWorkItemInput!): RemoveLabelsFromWorkItemResult!
-    createCommentOnWorkItem(input: CreateCommentOnWorkItemInput!): CreateCommentOnWorkItemResult!
-    createTheme(input: CreateThemeInput!): CreateThemeResult!
-    editTheme(input: EditThemeInput!): EditThemeResult!
-    addWatchersToTheme(input: AddWatchersToThemeInput!): AddWatchersToThemeResult!
-    removeWatchersFromTheme(input: RemoveWatchersFromThemeInput!): RemoveWatchersFromThemeResult!
-    addWorkItemsToTheme(input: AddWorkItemsToThemeInput!): AddWorkItemsToThemeResult!
-    removeWorkItemsFromTheme(input: RemoveWorkItemsFromThemeInput!): RemoveWorkItemsFromThemeResult!
-    createCommentOnTheme(input: CreateCommentOnThemeInput!): CreateCommentOnThemeResult!
-    editComment(input: EditCommentInput!): EditCommentResult!
-  }
+input EditWorkItemInput {
+  id: ID!
+  title: String
+  """
+  The [WorkItem](#workitem) object's description as a markdown-formatted string
+  """
+  description: String
+  statusId: ID
+  sort: String
+  effort: EffortSize
+  impact: ImpactSize
+}
+
+type EditWorkItemResult {
+  workItem: WorkItem!
+}
+
+input AddMembersToWorkItemInput {
+  id: ID!
+  memberIds: [ID!]!
+}
+
+type AddMembersToWorkItemResult {
+  workItem: WorkItem!
+}
+
+input RemoveMembersFromWorkItemInput {
+  id: ID!
+  memberIds: [ID!]!
+}
+
+type RemoveMembersFromWorkItemResult {
+  workItem: WorkItem!
+}
+
+input AddWatchersToWorkItemInput {
+  id: ID!
+  watcherIds: [ID!]!
+}
+
+type AddWatchersToWorkItemResult {
+  workItem: WorkItem!
+}
+
+input RemoveWatchersFromWorkItemInput {
+  id: ID!
+  watcherIds: [ID!]!
+}
+
+type RemoveWatchersFromWorkItemResult {
+  workItem: WorkItem!
+}
+
+input AddLabelsToWorkItemInput {
+  id: ID!
+  labelIds: [ID!]!
+}
+
+type AddLabelsToWorkItemResult {
+  workItem: WorkItem!
+}
+
+input RemoveLabelsFromWorkItemInput {
+  id: ID!
+  labelIds: [ID!]!
+}
+
+type RemoveLabelsFromWorkItemResult {
+  workItem: WorkItem!
+}
+
+input CreateCommentOnWorkItemInput {
+  id: ID!
+  body: String!
+  """
+  When creating a new comment thread, omit this property. Provide this property to add to an existing thread
+  """
+  threadId: String
+}
+
+type CreateCommentOnWorkItemResult {
+  comment: Comment!
+}
+
+input CreateThemeInput {
+  spaceId: ID!
+  title: String!
+  """
+  The sort order of the [Theme](#theme). Omitting this parameter will make the theme the first theme in the horizon column
+  """
+  sort: String
+  """
+  The [Theme](#theme) object's description as a markdown-formatted string
+  """
+  description: String
+  horizon: ThemeHorizon!
+  workItemIds: [ID!]
+  watcherIds: [ID!]
+}
+
+type CreateThemeResult {
+  theme: Theme!
+}
+
+input EditThemeInput {
+  id: ID!
+  title: String
+  """
+  The [Theme](#theme) object's description as a markdown-formatted string
+  """
+  description: String
+  horizon: ThemeHorizon
+}
+
+type EditThemeResult {
+  theme: Theme!
+}
+
+input AddWorkItemsToThemeInput {
+  id: ID!
+  workItemIds: [ID!]!
+}
+
+type AddWorkItemsToThemeResult {
+  theme: Theme!
+}
+
+input RemoveWorkItemsFromThemeInput {
+  id: ID!
+  workItemIds: [ID!]!
+}
+
+type RemoveWorkItemsFromThemeResult {
+  theme: Theme!
+}
+
+input AddWatchersToThemeInput {
+  id: ID!
+  watcherIds: [ID!]!
+}
+
+type AddWatchersToThemeResult {
+  theme: Theme!
+}
+
+input RemoveWatchersFromThemeInput {
+  id: ID!
+  watcherIds: [ID!]!
+}
+
+type RemoveWatchersFromThemeResult {
+  theme: Theme!
+}
+
+input CreateCommentOnThemeInput {
+  id: ID!
+  body: String!
+  """
+  When creating a new comment thread, omit this property. Provide this property to add to an existing thread
+  """
+  threadId: String
+}
+
+type CreateCommentOnThemeResult {
+  comment: Comment!
+}
+
+input EditCommentInput {
+  id: ID!
+  body: String
+}
+
+type EditCommentResult {
+  comment: Comment!
+}
+
+type Mutation {
+  createWorkItem(input: CreateWorkItemInput!): CreateWorkItemResult!
+  editWorkItem(input: EditWorkItemInput!): EditWorkItemResult!
+  addMembersToWorkItem(
+    input: AddMembersToWorkItemInput!
+  ): AddMembersToWorkItemResult!
+  removeMembersFromWorkItem(
+    input: RemoveMembersFromWorkItemInput!
+  ): RemoveMembersFromWorkItemResult!
+  addWatchersToWorkItem(
+    input: AddWatchersToWorkItemInput!
+  ): AddWatchersToWorkItemResult!
+  removeWatchersFromWorkItem(
+    input: RemoveWatchersFromWorkItemInput!
+  ): RemoveWatchersFromWorkItemResult!
+  addLabelsToWorkItem(
+    input: AddLabelsToWorkItemInput!
+  ): AddMembersToWorkItemResult!
+  removeLabelsFromWorkItem(
+    input: RemoveLabelsFromWorkItemInput!
+  ): RemoveLabelsFromWorkItemResult!
+  createCommentOnWorkItem(
+    input: CreateCommentOnWorkItemInput!
+  ): CreateCommentOnWorkItemResult!
+
+  createTheme(input: CreateThemeInput!): CreateThemeResult!
+  editTheme(input: EditThemeInput!): EditThemeResult!
+  addWatchersToTheme(input: AddWatchersToThemeInput!): AddWatchersToThemeResult!
+  removeWatchersFromTheme(
+    input: RemoveWatchersFromThemeInput!
+  ): RemoveWatchersFromThemeResult!
+  addWorkItemsToTheme(
+    input: AddWorkItemsToThemeInput!
+  ): AddWorkItemsToThemeResult!
+  removeWorkItemsFromTheme(
+    input: RemoveWorkItemsFromThemeInput!
+  ): RemoveWorkItemsFromThemeResult!
+  createCommentOnTheme(
+    input: CreateCommentOnThemeInput!
+  ): CreateCommentOnThemeResult!
+
+  editComment(input: EditCommentInput!): EditCommentResult!
+}
