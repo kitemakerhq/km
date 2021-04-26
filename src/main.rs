@@ -43,6 +43,12 @@ enum Item {
     List {
         /// Optional space key
         space: Option<String>,
+        /// List all (also backlog and done)
+        #[structopt(short, long)]
+        all: bool,
+        /// List only backlog
+        #[structopt(short, long)]
+        backlog: bool,
     },
 
     /// Create a new work item
@@ -114,7 +120,7 @@ async fn main() -> Result<(), reqwest::Error> {
         Commands::Item(arg) => {
             
             match arg.cmd {
-                Item::List{space} => {
+                Item::List{space, all, backlog} => {
 
                     let q = SpaceQuery::build_query( space_query::Variables {});
 
@@ -167,15 +173,20 @@ async fn main() -> Result<(), reqwest::Error> {
                             let response_data: items_query::ResponseData = response_body.data.expect("missing response data");
 
                             for item in response_data.work_items.work_items {
-                                
-                                let mut labels = format!("");
-                                for label in item.labels {
 
-                                    let rgb = Rgb::from_hex_str(&label.color).unwrap();
-                                    labels = format!("{:} {:}{:}", labels, "#".truecolor( rgb.get_red() as u8, rgb.get_green() as u8, rgb.get_blue() as u8 ), label.name);
-                                }
+                                if (all && item.status.type_ != items_query::StatusType::ARCHIVED) ||
+                                   (backlog && item.status.type_ == items_query::StatusType::BACKLOG) ||
+                                   (!backlog && !all && (item.status.type_ == items_query::StatusType::TODO || item.status.type_ == items_query::StatusType::IN_PROGRESS)) {
                                 
-                                println!("{:<20}{:<20}{:} {:}", item.status.name,spc.key.to_string() + "-" + &item.number.to_string(),item.title, labels.italic());
+                                    let mut labels = format!("");
+                                    for label in item.labels {
+
+                                        let rgb = Rgb::from_hex_str(&label.color).unwrap();
+                                        labels = format!("{:} {:}{:}", labels, "#".truecolor( rgb.get_red() as u8, rgb.get_green() as u8, rgb.get_blue() as u8 ), label.name);
+                                    }
+                                    
+                                    println!("{:<20}{:<20}{:} {:}", item.status.name,spc.key.to_string() + "-" + &item.number.to_string(),item.title, labels.italic());
+                                }
                             }
                         }
                     }

@@ -38,6 +38,7 @@ query ItemsQuery($spaceId: ID!) {
       status {
         id
         name
+        type
       }
 
       labels {
