@@ -48,3 +48,16 @@ query ItemsQuery($spaceId: ID!) {
     }
   }
 }
+
+mutation CreateWorkItem($statusId: ID!, $title: String!, $description: String) {
+  createWorkItem(input: {
+    statusId: $statusId,
+    title: $title,
+    description: $description,
+  }) {
+    workItem {
+      id
+      number
+    }
+  }
+}

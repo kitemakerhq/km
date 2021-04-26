@@ -41,13 +41,15 @@ struct SubCommands {
 enum Item {
     /// List all work items
     List {
+        /// Optional space key
         space: Option<String>,
     },
 
     /// Create a new work item
     Create {
         space: String,
-        title: String
+        title: String,
+        description: Option<String>,
     },
 }
 
@@ -68,6 +70,14 @@ struct SpaceQuery;
     response_derives = "Debug"
 )]
 struct ItemsQuery;
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "src/kitemaker.graphql",
+    query_path = "src/queries.graphql",
+    response_derives = "Debug"
+)]
+struct CreateWorkItem;
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
@@ -170,8 +180,54 @@ async fn main() -> Result<(), reqwest::Error> {
                         }
                     }
                 }
-                Item::Create{space, title} => {
-                    println!("Let's create the stuff in space{:} and name it {:}!!!", space, title);
+                Item::Create{space, title, description} => {
+                    let q = SpaceQuery::build_query( space_query::Variables {});
+
+                    let res = client
+                        .post("https://toil.kitemaker.co/developers/graphql")
+                        .bearer_auth(args.token.to_string())
+                        .json(&q)
+                        .send().await?;
+        
+        
+                    res.error_for_status_ref()?;
+        
+                    let response_body: Response<space_query::ResponseData> = res.json().await?;
+                    
+                    let response_data: space_query::ResponseData = response_body.data.expect("missing response data");
+
+                    let spc = response_data.organization.spaces.iter().find( |&s| s.key == space);
+
+                    match spc {
+                        None => { println!("Could not find space {:}", space); }
+                        Some(s) => { 
+
+                            
+                            // Find the default status
+                            let default_status = s.statuses.iter().find( | &st | st.default == true).expect("missing default status");
+
+                            let q = CreateWorkItem::build_query( create_work_item::Variables {
+                                status_id: default_status.id.to_string(),
+                                title: title,
+                                description: description,
+                            });
+
+                            let res = client
+                                .post("https://toil.kitemaker.co/developers/graphql")
+                                .bearer_auth(args.token.to_string())
+                                .json(&q)
+                                .send().await?;
+
+                            res.error_for_status_ref()?;
+    
+                            let response_body: Response<create_work_item::ResponseData> = res.json().await?;
+                            
+                            let response_data: create_work_item::ResponseData = response_body.data.expect("missing response data");
+
+                            let work_item_number = format!("{:}-{:}",s.key, response_data.create_work_item.work_item.number);
+                            println!("Work item {:} created", work_item_number.bold());
+                        }
+                    }
                 }
             }
         }
