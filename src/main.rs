@@ -53,8 +53,11 @@ enum Item {
 
     /// Create a new work item
     Create {
+        /// Key for the target space
         space: String,
+        /// Title of the new work item
         title: String,
+        /// Description as markdown formatted text
         description: Option<String>,
     },
 }
