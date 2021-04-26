@@ -6,7 +6,7 @@ You need Rust to build this: https://www.rust-lang.org/tools/install
 
 To run:
 ```bash
-$ cargo run -- <your parameters>
+$ cargo run -- [your parameters]
 ```
   
 To build release:
