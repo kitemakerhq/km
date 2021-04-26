@@ -28,8 +28,12 @@ query SpaceQuery {
   }
 }
 
-query ItemsQuery($spaceId: ID!) {
-  workItems(spaceId: $spaceId) {
+query ItemsQuery($spaceId: ID!, $cursor: String) {
+  workItems(spaceId: $spaceId, cursor: $cursor) {
+    
+    cursor
+    hasMore
+
     workItems {
       id
       number

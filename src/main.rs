@@ -157,38 +157,45 @@ async fn main() -> Result<(), reqwest::Error> {
                         }
                         
                         if print_items {
-                            println!("{:<20}{:<20}{:<40}", "Status".bold().underline(),"Key".bold().underline(),"Title".bold().underline());
+                            println!("{:<30}{:<20}{:<40}", "Status".bold().underline(),"Key".bold().underline(),"Title".bold().underline());
 
+                            let mut has_more = true;
+                            let mut cursor: Option<String> = None;
 
-                            let q = ItemsQuery::build_query( items_query::Variables {space_id: spc.id.to_string()});
+                            while has_more  {
+                                let q = ItemsQuery::build_query( items_query::Variables {space_id: spc.id.to_string(), cursor: cursor});
 
-                            let res = client
-                                .post("https://toil.kitemaker.co/developers/graphql")
-                                .bearer_auth(args.token.to_string())
-                                .json(&q)
-                                .send().await?;
-                
-                
-                            res.error_for_status_ref()?;
-                
-                            let response_body: Response<items_query::ResponseData> = res.json().await?;
-                            
-                            let response_data: items_query::ResponseData = response_body.data.expect("missing response data");
-
-                            for item in response_data.work_items.work_items {
-
-                                if (all && item.status.type_ != items_query::StatusType::ARCHIVED) ||
-                                   (backlog && item.status.type_ == items_query::StatusType::BACKLOG) ||
-                                   (!backlog && !all && (item.status.type_ == items_query::StatusType::TODO || item.status.type_ == items_query::StatusType::IN_PROGRESS)) {
+                                let res = client
+                                    .post("https://toil.kitemaker.co/developers/graphql")
+                                    .bearer_auth(args.token.to_string())
+                                    .json(&q)
+                                    .send().await?;
+                    
+                    
+                                res.error_for_status_ref()?;
+                    
+                                let response_body: Response<items_query::ResponseData> = res.json().await?;
                                 
-                                    let mut labels = format!("");
-                                    for label in item.labels {
+                                let response_data: items_query::ResponseData = response_body.data.expect("missing response data");
 
-                                        let rgb = Rgb::from_hex_str(&label.color).unwrap();
-                                        labels = format!("{:} {:}{:}", labels, "#".truecolor( rgb.get_red() as u8, rgb.get_green() as u8, rgb.get_blue() as u8 ), label.name);
-                                    }
+                                has_more = response_data.work_items.has_more;
+                                cursor = Some(response_data.work_items.cursor.to_string());
+
+                                for item in response_data.work_items.work_items {
+
+                                    if (all && item.status.type_ != items_query::StatusType::ARCHIVED) ||
+                                    (backlog && item.status.type_ == items_query::StatusType::BACKLOG) ||
+                                    (!backlog && !all && (item.status.type_ == items_query::StatusType::TODO || item.status.type_ == items_query::StatusType::IN_PROGRESS)) {
                                     
-                                    println!("{:<20}{:<20}{:} {:}", item.status.name,spc.key.to_string() + "-" + &item.number.to_string(),item.title, labels.italic());
+                                        let mut labels = format!("");
+                                        for label in item.labels {
+
+                                            let rgb = Rgb::from_hex_str(&label.color).unwrap();
+                                            labels = format!("{:} {:}{:}", labels, "#".truecolor( rgb.get_red() as u8, rgb.get_green() as u8, rgb.get_blue() as u8 ), label.name);
+                                        }
+                                        
+                                        println!("{:<30}{:<20}{:} {:}", item.status.name,spc.key.to_string() + "-" + &item.number.to_string(),item.title, labels.italic());
+                                    }
                                 }
                             }
                         }
