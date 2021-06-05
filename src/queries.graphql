@@ -54,6 +54,33 @@ query ItemsQuery($spaceId: ID!, $cursor: String) {
   }
 }
 
+query ItemQuery($itemId: ID!) {
+  workItem( id: $itemId ) {
+    id
+    number
+    title
+
+    description
+
+    status {
+      id
+      name
+      type
+    }
+
+    labels {
+      id
+      name
+      color
+    }
+
+    members {
+      id
+      username
+    }
+  }
+}
+
 mutation CreateWorkItem($statusId: ID!, $title: String!, $description: String) {
   createWorkItem(input: {
     statusId: $statusId,

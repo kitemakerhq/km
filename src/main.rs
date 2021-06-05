@@ -7,8 +7,8 @@ use graphql_client::*;
 
 use colored::*;
 
-use colors_transform::*;
 use colors_transform::Color;
+use colors_transform::Rgb;
 
 
 /// Command line tool for Kitemaker
@@ -60,6 +60,12 @@ enum Item {
         /// Description as markdown formatted text
         description: Option<String>,
     },
+
+    /// View a work item
+    View {
+        /// The number with space key (e.g., ABC-123) for the work item
+        number: String
+    }
 }
 
 // GraphQL queries
@@ -71,7 +77,6 @@ enum Item {
 )]
 struct SpaceQuery;
 
-
 #[derive(GraphQLQuery)]
 #[graphql(
     schema_path = "src/kitemaker.graphql",
@@ -79,6 +84,14 @@ struct SpaceQuery;
     response_derives = "Debug"
 )]
 struct ItemsQuery;
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "src/kitemaker.graphql",
+    query_path = "src/queries.graphql",
+    response_derives = "Debug"
+)]
+struct ItemQuery;
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -247,6 +260,100 @@ async fn main() -> Result<(), reqwest::Error> {
 
                             let work_item_number = format!("{:}-{:}",s.key, response_data.create_work_item.work_item.number);
                             println!("Work item {:} created", work_item_number.bold());
+                        }
+                    }
+                }
+                Item::View{number} => {
+                    let mut parts = number.split("-");
+                    let space = parts.next().expect("Missing space key");
+                    let number = parts.next().expect("Missing work item number");
+
+                    // First find the correct space and id
+                    let q = SpaceQuery::build_query( space_query::Variables {});
+
+                    let res = client
+                        .post("https://toil.kitemaker.co/developers/graphql")
+                        .bearer_auth(args.token.to_string())
+                        .json(&q)
+                        .send().await?;
+        
+        
+                    res.error_for_status_ref()?;
+        
+                    let response_body: Response<space_query::ResponseData> = res.json().await?;
+                    
+                    let response_data: space_query::ResponseData = response_body.data.expect("missing response data");
+        
+                    let spc = response_data.organization.spaces.iter().find( |&s| s.key == space);
+
+                    match spc {
+                        None => { println!("Could not find space {:}", space); }
+                        Some(s) => { 
+                            // Find the work item
+                            let mut has_more = true;
+                            let mut cursor: Option<String> = None;
+
+                            while has_more  {
+                                let q = ItemsQuery::build_query( items_query::Variables {space_id: s.id.to_string(), cursor: cursor});
+
+                                let res = client
+                                    .post("https://toil.kitemaker.co/developers/graphql")
+                                    .bearer_auth(args.token.to_string())
+                                    .json(&q)
+                                    .send().await?;
+                    
+                    
+                                res.error_for_status_ref()?;
+                    
+                                let response_body: Response<items_query::ResponseData> = res.json().await?;
+                                
+                                let response_data: items_query::ResponseData = response_body.data.expect("missing response data");
+
+                                has_more = response_data.work_items.has_more;
+                                cursor = Some(response_data.work_items.cursor.to_string());
+
+                                let item = response_data.work_items.work_items.iter().find( |&w| w.number == number);
+
+                                match item {
+                                    None => {
+
+                                    },
+                                    Some(i) => {
+
+                                        let q = ItemQuery::build_query( item_query::Variables {item_id: i.id.to_string()});
+
+                                        let res = client
+                                            .post("https://toil.kitemaker.co/developers/graphql")
+                                            .bearer_auth(args.token.to_string())
+                                            .json(&q)
+                                            .send().await?;
+                            
+                                        res.error_for_status_ref()?;
+
+                                        let response_body: Response<item_query::ResponseData> = res.json().await?;
+                                        
+                                        let response_data: item_query::ResponseData = response_body.data.expect("missing response data");
+
+                                        let item = response_data.work_item;
+
+                                        println!("{}-{}: {}", s.key.bold(), item.number.bold(), item.title.bold());
+
+                                        if item.labels.len() > 0 {
+                                            let mut labels = format!("");
+                                            for label in item.labels {
+
+                                                let rgb = Rgb::from_hex_str(&label.color).unwrap();
+                                                labels = format!("{:} {:}{:}", labels, "#".truecolor( rgb.get_red() as u8, rgb.get_green() as u8, rgb.get_blue() as u8 ), label.name);
+                                            }
+                                            println!("{} {}", "Labels:".bold(), labels);
+                                        }
+                                        println!("\n{}\n{}","Description:".bold(), item.description);
+                                        
+                                        // We're done, so skip searching for more items
+                                        return Ok(());
+                                    }
+                                }
+                            }
                         }
                     }
                 }
