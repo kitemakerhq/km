@@ -238,7 +238,7 @@ async fn main() -> Result<(), reqwest::Error> {
 
                             
                             // Find the default status
-                            let default_status = s.statuses.iter().find( | &st | st.default == true).expect("missing default status");
+                            let default_status = s.statuses.iter().find( | &st | st.default == true && (st.type_ == space_query::StatusType::BACKLOG || st.type_ == space_query::StatusType::TODO) ).expect("missing default open status");
 
                             let q = CreateWorkItem::build_query( create_work_item::Variables {
                                 status_id: default_status.id.to_string(),
