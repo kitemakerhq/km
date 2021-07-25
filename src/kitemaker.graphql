@@ -175,10 +175,12 @@ type WorkItem {
   Sort is a string that determines where in a particular status column a work item will appear
   """
   sort: String!
+  space: Space!
   members: [User!]!
   watchers: [User!]!
   labels: [Label!]!
   comments: [Comment!]!
+  themes: [Theme!]!
   effort: EffortSize
   impact: ImpactSize
   updatedAt: Date!

@@ -337,6 +337,17 @@ async fn main() -> Result<(), reqwest::Error> {
                                         let item = response_data.work_item;
 
                                         println!("{}-{}: {}", s.key.bold(), item.number.bold(), item.title.bold());
+                                        println!("Status: {}", item.status.name.bold());
+
+                                        if item.themes.len() > 0 {
+                                            let mut themes = format!("");
+                                            for theme in item.themes {
+
+                                                themes = format!("{:} {:}", themes, theme.title.bold());
+                                            }
+                                            println!("{}{}", "Themes:", themes);
+                                        }
+                                        
 
                                         if item.labels.len() > 0 {
                                             let mut labels = format!("");
@@ -345,7 +356,7 @@ async fn main() -> Result<(), reqwest::Error> {
                                                 let rgb = Rgb::from_hex_str(&label.color).unwrap();
                                                 labels = format!("{:} {:}{:}", labels, "#".truecolor( rgb.get_red() as u8, rgb.get_green() as u8, rgb.get_blue() as u8 ), label.name);
                                             }
-                                            println!("{} {}", "Labels:".bold(), labels);
+                                            println!("{}{}", "Labels:", labels);
                                         }
                                         println!("\n{}\n{}","Description:".bold(), item.description);
                                         

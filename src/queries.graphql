@@ -74,6 +74,11 @@ query ItemQuery($itemId: ID!) {
       color
     }
 
+    themes {
+      id
+      title
+    }
+
     members {
       id
       username
