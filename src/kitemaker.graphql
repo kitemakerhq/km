@@ -1,22 +1,5 @@
 scalar Date
-
-"""
-T-shirt sizing for effort
-"""
-enum EffortSize {
-  SMALL
-  MEDIUM
-  LARGE
-}
-
-"""
-T-shirt sizing for impact
-"""
-enum ImpactSize {
-  SMALL
-  MEDIUM
-  LARGE
-}
+scalar JSON
 
 """
 Different types of integrations, mainly useful for when fetching and displaying [Integration](#integration) and [IntegrationUser](#integrationuser) objects
@@ -27,6 +10,10 @@ enum IntegrationType {
   TRELLO
   SLACK
   DISCORD
+  GITLAB
+  ZAPIER
+  INTERCOM
+  SENTRY
 }
 
 """
@@ -51,15 +38,71 @@ enum ThemeHorizon {
 }
 
 """
+Whether to treat as an include or exclude filter
+"""
+enum StatusFilterType {
+  INCLUDE
+  EXCLUDE
+}
+
+"""
+Different states that a code review request can be in
+"""
+enum CodeReviewRequestState {
+  OPEN
+  CLOSED
+  MERGED
+  LOCKED
+}
+
+"""
+The status type of a [Roadmap](#roadmap) column
+"""
+enum RoadmapColumnStatusType {
+  PAST
+  PRESENT
+  FUTURE
+}
+
+"""
+Different types of activities
+"""
+enum ActivityType {
+  CREATED
+  STATUS_CHANGED
+  LABELS_CHANGED
+  IMPACT_CHANGED
+  EFFORT_CHANGED
+  ENTITIES_CHANGED
+  MEMBERS_CHANGED
+  IMPORTED
+  DUPLICATED_TO
+  DUPLICATED_FROM
+  CREATED_FROM
+  MENTIONED
+  MENTIONED_IN_INTEGRATION
+  HORIZON_CHANGED
+  CODE_REVIEW_REQUEST_ADDED
+  DEPENDENCY
+  TITLE_CHANGED
+  TODO_CHANGED
+  STALE_ISSUE
+  SPACES_CHANGED
+  ROADMAPS_CHANGED
+}
+
+"""
 The top level object describing the user or application's organization
 """
 type Organization {
   id: ID!
   name: String!
+  slug: String!
   spaces: [Space!]!
   users: [User!]!
   integrations: [Integration!]!
   integrationUsers: [IntegrationUser!]!
+  applications: [Application!]!
   updatedAt: Date!
   createdAt: Date!
 }
@@ -68,8 +111,11 @@ type Space {
   id: ID!
   key: String!
   name: String!
+  slug: String!
   labels: [Label!]!
   statuses: [Status!]!
+  private: Boolean!
+  members: [User!]
   updatedAt: Date!
   createdAt: Date!
 }
@@ -87,6 +133,8 @@ type Status {
   name: String!
   type: StatusType!
   default: Boolean!
+  updatedAt: Date!
+  createdAt: Date!
 }
 
 type User {
@@ -94,6 +142,8 @@ type User {
   username: String!
   name: String
   avatar: String
+  guest: Boolean!
+  deactivated: Boolean!
   updatedAt: Date!
   createdAt: Date!
 }
@@ -161,6 +211,23 @@ type Comment {
   createdAt: Date!
 }
 
+"""
+Activities are found on either [WorkItem](#workitem) or [Theme](#theme) objects
+"""
+type Activity {
+  id: ID!
+  type: ActivityType!
+  actor: Actor!
+  """
+  Details are properties specific to the type of activity.
+  Note: this property should be considered a beta part of the API and is subject to change
+  """
+  details: JSON!
+  entity: Entity!
+  updatedAt: Date!
+  createdAt: Date!
+}
+
 type WorkItem {
   id: ID!
   number: String!
@@ -180,9 +247,12 @@ type WorkItem {
   watchers: [User!]!
   labels: [Label!]!
   comments: [Comment!]!
+  activities: [Activity!]!
   themes: [Theme!]!
-  effort: EffortSize
-  impact: ImpactSize
+  effort: String
+  impact: String
+  closedAt: Date
+  archivedAt: Date
   updatedAt: Date!
   createdAt: Date!
 }
@@ -200,12 +270,134 @@ type Theme {
   Sort is a string that determines where in a particular horizon column a theme will appear
   """
   sort: String!
+  space: Space!
   horizon: ThemeHorizon!
   workItems: [WorkItem!]!
   comments: [Comment!]!
+  activities: [Activity!]!
   watchers: [User!]!
+  members: [User!]!
+  labels: [Label!]!
+  effort: String
+  impact: String
+  archivedAt: Date
   updatedAt: Date!
   createdAt: Date!
+  color: String!
+}
+
+type Person {
+  id: ID!
+  name: String!
+  email: String
+  company: Company
+  externalId: String
+  updatedAt: Date!
+  createdAt: Date!
+}
+
+type Company {
+  id: ID!
+  name: String!
+  domain: String
+  updatedAt: Date!
+  createdAt: Date!
+}
+
+type Insight {
+  id: ID!
+  actor: Actor!
+  content: String!
+  entities: [Entity!]!
+  updatedAt: Date!
+  createdAt: Date!
+}
+
+type Feedback {
+  id: ID!
+  number: String!
+  actor: Actor!
+  title: String!
+  """
+  The content of a feedback as a markdown-formatted string
+  """
+  content: String!
+  """
+  Sort is a string that determines where in a particular horizon column a theme will appear
+  """
+  company: Company
+  person: Person
+  owners: [User!]!
+  tags: [Label!]!
+  insights: [Insight!]!
+
+  processed: Boolean!
+  processedAt: Date
+  updatedAt: Date!
+  createdAt: Date!
+}
+
+type Initiative {
+  id: ID!
+  number: String!
+  title: String!
+  color: String!
+  actor: Actor!
+  """
+  The description of a theme as a markdown-formatted string
+  """
+  description: String!
+
+  workItems: [WorkItem!]!
+  comments: [Comment!]!
+  activities: [Activity!]!
+  watchers: [User!]!
+  members: [User!]!
+  labels: [Label!]!
+  spaces: [Space!]!
+  roadmapColumns: [RoadmapColumn!]!
+  effort: String
+  impact: String
+  archivedAt: Date
+  updatedAt: Date!
+  createdAt: Date!
+}
+
+type Roadmap {
+  id: ID!
+  name: String!
+  color: String!
+  columns: [RoadmapColumn!]!
+}
+
+type RoadmapColumn {
+  id: ID!
+  name: String!
+  roadmap: Roadmap!
+  columnType: RoadmapColumnStatusType!
+  initiatives: [Initiative!]!
+}
+
+type CodeReviewRequestDetails {
+  number: String!
+  url: String!
+  title: String!
+}
+
+type CodeReviewRequestLink {
+  name: String!
+  url: String!
+}
+
+type CodeReviewRequest {
+  id: ID!
+  codeReviewType: IntegrationType!
+  workItems: [WorkItem!]!
+  state: CodeReviewRequestState!
+  details: CodeReviewRequestDetails!
+  links: [CodeReviewRequestLink!]!
+  createdAt: Date!
+  updatedAt: Date!
 }
 
 type WorkItemsQueryResult {
@@ -232,19 +424,60 @@ type ThemesQueryResult {
   hasMore: Boolean!
 }
 
+type InitiativesQueryResult {
+  initiatives: [Initiative!]!
+  """
+  An opaque string used for paging. Pass this string to the initiatives query to iterate through the results a page at a time
+  """
+  cursor: String!
+  """
+  Indicates if more results are available (by requerying initiatives, passing the cursor)
+  """
+  hasMore: Boolean!
+}
+type FeedbackQueryResult {
+  feedback: [Feedback!]!
+  """
+  An opaque string used for paging. Pass this string to the initiatives query to iterate through the results a page at a time
+  """
+  cursor: String!
+  """
+  Indicates if more results are available (by requerying initiatives, passing the cursor)
+  """
+  hasMore: Boolean!
+}
+
+type RoadmapsQueryResult {
+  roadmaps: [Roadmap!]!
+}
+
 type Query {
   """
   Fetch the main organization object. Useful for finding out which users, spaces, labels, statuses, etc. are available before fetching and manipulating work items and themes
   """
   organization: Organization!
   """
+  Fetch a space by key (e.g., 'ABC')
+  """
+  spaceByKey(key: String!): Space!
+  """
   Fetch [WorkItem](#workitem) objects for a particular [Space](#space). This will return at most 50 work items at a time so use the paging facilities to fetch more results
   """
-  workItems(spaceId: ID, cursor: String, count: Int): WorkItemsQueryResult!
+  workItems(
+    spaceId: ID
+    cursor: String
+    count: Int
+    statusFilter: StatusFilter
+  ): WorkItemsQueryResult!
+
   """
   Fetch a single [WorkItem](#workitem) by ID
   """
   workItem(id: ID!): WorkItem!
+  """
+  Fetch a single [WorkItem](#workitem) by number (e.g., 'ABC-123')
+  """
+  workItemByNumber(number: String!): WorkItem!
   """
   Fetch [Theme](#theme) objects for a particular [Space](#space). This will return at most 50 themes at a time so use the paging facilities to fetch more results
   """
@@ -254,9 +487,57 @@ type Query {
   """
   theme(id: ID!): Theme!
   """
+  Fetch a single [Theme](#theme) by number (e.g. 'ABC-123')
+  """
+  themeByNumber(number: String): Theme!
+
+  """
+  Fetch [Initiative](#initiative) objects for a particular [Organization](#organization). This will return at most 50 initiatives at a time so use the paging facilities to fetch more results
+  """
+  initiatives(cursor: String, count: Int): InitiativesQueryResult!
+  """
+  Fetch a single [Initiative](#initiative) by ID
+  """
+  initiative(id: ID!): Initiative!
+  """
+  Fetch a single [Initiative](#initiative) by number (e.g. 'I-123')
+  """
+  initiativeByNumber(number: String): Initiative!
+
+  """
+  Fetches all [Roadmap](#roadmap) for the organization
+  """
+  roadmaps: RoadmapsQueryResult!
+
+  """
+  Fetch [Initiative](#initiative) objects for a particular [Organization](#organization). This will return at most 50 initiatives at a time so use the paging facilities to fetch more results
+  """
+  feedback(cursor: String, count: Int): FeedbackQueryResult!
+  """
+  Fetch a single [Initiative](#initiative) by ID
+  """
+  feedbackById(id: ID!): Feedback!
+  """
+  Fetch a single [Initiative](#initiative) by number (e.g. 'I-123')
+  """
+  feedbackByNumber(number: String): Feedback!
+  """
+  List all [Person](#person) for the organization
+  """
+  feedbackPersons: [Person!]!
+  """
+  List all [Company](#company) for the organization
+  """
+  feedbackCompanies: [Company!]!
+
+  """
   Fetch a single [Comment](#comment) by ID
   """
   comment(id: ID!): Comment!
+  """
+  Fetch a code review request by URL
+  """
+  codeReviewRequest(url: String!): CodeReviewRequest!
 }
 
 input CreateWorkItemInput {
@@ -265,7 +546,8 @@ input CreateWorkItemInput {
   The [WorkItem](#workitem) object's description as a markdown-formatted string
   """
   description: String
-  statusId: ID!
+  spaceId: ID
+  statusId: ID
   """
   The sort order of the [WorkItem](#workitem). Omitting this parameter will make the work item the first work item in the status column
   """
@@ -273,8 +555,8 @@ input CreateWorkItemInput {
   memberIds: [ID!]
   watcherIds: [ID!]
   labelIds: [ID!]
-  effort: EffortSize
-  impact: ImpactSize
+  effort: String
+  impact: String
 }
 
 type CreateWorkItemResult {
@@ -288,14 +570,23 @@ input EditWorkItemInput {
   The [WorkItem](#workitem) object's description as a markdown-formatted string
   """
   description: String
+  spaceId: ID
   statusId: ID
   sort: String
-  effort: EffortSize
-  impact: ImpactSize
+  effort: String
+  impact: String
 }
 
 type EditWorkItemResult {
   workItem: WorkItem!
+}
+
+"""
+Filter used when requesting work items
+"""
+input StatusFilter {
+  type: StatusFilterType!
+  filter: [StatusType!]!
 }
 
 input AddMembersToWorkItemInput {
@@ -392,6 +683,10 @@ input EditThemeInput {
   The [Theme](#theme) object's description as a markdown-formatted string
   """
   description: String
+  """
+  DANGER: Changing the spaceId is experimental and currently removes all of a theme's work items
+  """
+  spaceId: ID
   horizon: ThemeHorizon
 }
 
@@ -435,6 +730,24 @@ type RemoveWatchersFromThemeResult {
   theme: Theme!
 }
 
+input AddLabelsToThemeInput {
+  id: ID!
+  labelIds: [ID!]!
+}
+
+type AddLabelsToThemeResult {
+  theme: Theme!
+}
+
+input RemoveLabelsFromThemeInput {
+  id: ID!
+  labelIds: [ID!]!
+}
+
+type RemoveLabelsFromThemeResult {
+  theme: Theme!
+}
+
 input CreateCommentOnThemeInput {
   id: ID!
   body: String!
@@ -455,6 +768,147 @@ input EditCommentInput {
 
 type EditCommentResult {
   comment: Comment!
+}
+
+input CodeReviewRequestLinkInput {
+  name: String!
+  url: String!
+}
+
+input EditCodeReviewRequestInput {
+  id: ID!
+  links: [CodeReviewRequestLinkInput!]
+}
+
+type EditCodeReviewRequestResult {
+  codeReviewRequest: CodeReviewRequest!
+}
+
+input CreateLabelInput {
+  spaceId: ID!
+  name: String!
+  color: String
+}
+
+type CreateLabelResult {
+  label: Label!
+}
+
+input CreateFeedbackInput {
+  title: String!
+  content: String
+  processed: Boolean
+  companyId: ID
+  personId: ID
+  ownerIds: [ID!]
+  tagIds: [ID!]
+  """
+  When this property is provided, the created feedback will be automatically linked to the specified entities with a new insight
+  """
+  linkInsightToEntityIds: [ID!]
+}
+
+type CreateFeedbackResult {
+  feedback: Feedback!
+}
+
+input EditFeedbackInput {
+  id: ID!
+  title: String
+  content: String
+  processed: Boolean
+  companyId: ID
+  personId: ID
+}
+
+type EditFeedbackResult {
+  feedback: Feedback!
+}
+
+input AddOwnersToFeedbackInput {
+  id: ID!
+  ownerIds: [ID!]!
+}
+type AddOwnersToFeedbackResult {
+  feedback: Feedback!
+}
+
+input RemoveOwnersFromFeedbackInput {
+  id: ID!
+  ownerIds: [ID!]!
+}
+type RemoveOwnersFromFeedbackResult {
+  feedback: Feedback!
+}
+
+input AddTagsToFeedbackInput {
+  id: ID!
+  tagIds: [ID!]!
+}
+type AddTagsToFeedbackResult {
+  feedback: Feedback!
+}
+
+input RemoveTagsFromFeedbackInput {
+  id: ID!
+  tagIds: [ID!]!
+}
+type RemoveTagsFromFeedbackResult {
+  feedback: Feedback!
+}
+
+input AddEntitiesToInsightInput {
+  id: ID!
+  entityIds: [ID!]!
+}
+type AddEntitiesToInsightResult {
+  insight: Insight!
+}
+
+input RemoveEntitiesFromInsightInput {
+  id: ID!
+  entityIds: [ID!]!
+}
+type RemoveEntitiesFromInsightResult {
+  insight: Insight!
+}
+
+input CreatePersonInput {
+  name: String!
+  email: String
+  companyId: ID
+}
+type CreatePersonResult {
+  person: Person!
+}
+
+input EditPersonInput {
+  id: ID!
+  name: String
+  email: String
+  companyId: ID
+}
+type EditPersonResult {
+  person: Person!
+}
+
+input CreateCompanyInput {
+  name: String!
+  avatar: String
+  domain: String
+}
+type CreateCompanyResult {
+  company: Company!
+}
+
+input EditCompanyInput {
+  id: ID!
+  name: String
+  avatar: String
+  domain: String
+}
+type EditCompanyResult {
+  company: Company!
 }
 
 type Mutation {
@@ -482,6 +936,31 @@ type Mutation {
     input: CreateCommentOnWorkItemInput!
   ): CreateCommentOnWorkItemResult!
 
+  createFeedback(input: CreateFeedbackInput!): CreateFeedbackResult!
+  editFeedback(input: EditFeedbackInput!): EditFeedbackResult!
+  addOwnersToFeedback(
+    input: AddOwnersToFeedbackInput!
+  ): AddOwnersToFeedbackResult!
+  removeOwnersFromFeedback(
+    input: RemoveOwnersFromFeedbackInput!
+  ): RemoveOwnersFromFeedbackResult!
+  addTagsToFeedback(input: AddTagsToFeedbackInput!): AddTagsToFeedbackResult!
+  removeTagsFromFeedback(
+    input: RemoveTagsFromFeedbackInput!
+  ): RemoveTagsFromFeedbackResult!
+
+  createPerson(input: CreatePersonInput!): CreatePersonResult!
+  editPerson(input: EditPersonInput!): EditPersonResult!
+  createCompany(input: CreateCompanyInput!): CreateCompanyResult!
+  editCompany(input: EditCompanyInput!): EditCompanyResult!
+
+  addEntitiesToInsight(
+    input: AddEntitiesToInsightInput!
+  ): AddEntitiesToInsightResult!
+  removeEntitiesFromInsight(
+    input: RemoveEntitiesFromInsightInput!
+  ): RemoveEntitiesFromInsightResult!
+
   createTheme(input: CreateThemeInput!): CreateThemeResult!
   editTheme(input: EditThemeInput!): EditThemeResult!
   addWatchersToTheme(input: AddWatchersToThemeInput!): AddWatchersToThemeResult!
@@ -494,9 +973,20 @@ type Mutation {
   removeWorkItemsFromTheme(
     input: RemoveWorkItemsFromThemeInput!
   ): RemoveWorkItemsFromThemeResult!
+  addLabelsToTheme(input: AddLabelsToThemeInput!): AddLabelsToThemeResult!
+  removeLabelsFromTheme(
+    input: RemoveLabelsFromThemeInput!
+  ): RemoveLabelsFromThemeResult!
+
   createCommentOnTheme(
     input: CreateCommentOnThemeInput!
   ): CreateCommentOnThemeResult!
 
   editComment(input: EditCommentInput!): EditCommentResult!
+
+  editCodeReviewRequest(
+    input: EditCodeReviewRequestInput!
+  ): EditCodeReviewRequestResult!
+
+  createLabel(input: CreateLabelInput!): CreateLabelResult!
 }
