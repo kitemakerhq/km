@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 
-use graphql_client::GraphQLQuery;
+use graphql_client::{GraphQLQuery, Response};
 
 use std::error::Error;
 
@@ -116,16 +116,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             res.error_for_status_ref()?;
 
-            let response_data = res.json::<space_query::ResponseData>().await?;
+            let response_data: Response<space_query::ResponseData>  =res.json().await?;
+            let data = response_data.data.unwrap().organization;
 
-            println!("{:}", response_data.organization.name.bold());
+            println!("{:}", data.name.bold());
 
             println!(
                 "{:<15}{:}",
                 "Key".bold().underline(),
                 "Space name".bold().underline()
             );
-            for space in response_data.organization.spaces.iter() {
+            for space in data.spaces.iter() {
                 println!("{:<15}{:}", space.key.yellow(), space.name.bold());
             }
         }
@@ -390,15 +391,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                             item.title.bold()
                                         );
                                         println!("Status: {}", item.status.name.bold());
-
-                                        if item.themes.len() > 0 {
-                                            let mut themes = format!("");
-                                            for theme in item.themes {
-                                                themes =
-                                                    format!("{:} {:}", themes, theme.title.bold());
-                                            }
-                                            println!("{}{}", "Themes:", themes);
-                                        }
 
                                         if item.labels.len() > 0 {
                                             let mut labels = format!("");
