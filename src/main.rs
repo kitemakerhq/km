@@ -9,6 +9,8 @@ use colored::*;
 use colors_transform::Color;
 use colors_transform::Rgb;
 
+use std::collections::HashMap;
+
 // GraphQL queries
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -102,6 +104,41 @@ enum Item {
 async fn main() -> Result<(), Box<dyn Error>> {
     let args = Cli::from_args();
     let client = reqwest::Client::new();
+
+    let color_mapping: HashMap<&str, &str> = [
+        ("gray", "#8D8D8D"),
+        ("mauve", "#8E8C99"),
+        ("slate", "#8B8D98"),
+        ("sage", "#B8BCBA"),
+        ("olive", "#898E87"),
+        ("sand", "#8D8D86"),
+        ("tomato", "#E54D2E"),
+        ("red", "#E5484D"),
+        ("ruby", "#E54666"),
+        ("crimson", "#E93D82"),
+        ("pink", "#D6409F"),
+        ("plum", "#AB4ABA"),
+        ("purple", "#8E4EC6"),
+        ("violet", "#6E56CF"),
+        ("iris", "#5B5BD6"),
+        ("indigo", "#3E63DD"),
+        ("blue", "#0090FF"),
+        ("cyan", "#00A2C7"),
+        ("teal", "#12A594"),
+        ("jade", "#29A383"),
+        ("green", "#30A46C"),
+        ("grass", "#46A758"),
+        ("bronze", "#A18072"),
+        ("gold", "#978365"),
+        ("brown", "#AD7F58"),
+        ("orange", "#F76B15"),
+        ("amber", "#FFC53D"),
+        ("yellow", "#FFE629"),
+        ("lime", "#BDEE63"),
+        ("mint", "#86EAD4"),
+        ("sky", "#7CE2FE"),
+    ]
+    .into();
 
     match args.cmd {
         Commands::Organization => {
@@ -214,7 +251,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     {
                                         let mut labels = format!("");
                                         for label in item.labels {
-                                            let rgb = Rgb::from_hex_str(&label.color).unwrap();
+                                            let hex_color = if label.color.starts_with('#') {
+                                                label.color.clone()
+                                            } else {
+                                                color_mapping
+                                                    .get(&label.color.as_str())
+                                                    .unwrap_or(&"#FFFFFF")
+                                                    .to_string()
+                                            };
+                                            let rgb = Rgb::from_hex_str(&hex_color).unwrap();
                                             labels = format!(
                                                 "{:} {:}{:}",
                                                 labels,
@@ -404,7 +449,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                         if item.labels.len() > 0 {
                                             let mut labels = format!("");
                                             for label in item.labels {
-                                                let rgb = Rgb::from_hex_str(&label.color).unwrap();
+                                                let hex_color = if label.color.starts_with('#') {
+                                                    label.color.clone()
+                                                } else {
+                                                    color_mapping
+                                                        .get(&label.color.as_str())
+                                                        .unwrap_or(&"#FFFFFF")
+                                                        .to_string()
+                                                };
+                                                let rgb = Rgb::from_hex_str(&hex_color).unwrap();
                                                 labels = format!(
                                                     "{:} {:}{:}",
                                                     labels,
@@ -418,11 +471,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                             }
                                             println!("{}{}", "Labels:", labels);
                                         }
-                                        println!(
-                                            "\n{}\n{}",
-                                            "Description:".bold(),
-                                            item.description
-                                        );
+                                        println!("\n{}\n", "Description:".bold());
+                                        termimad::print_text(item.description.as_str());
 
                                         // We're done, so skip searching for more items
                                         return Ok(());
