@@ -116,17 +116,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             res.error_for_status_ref()?;
 
-            let response_data: Response<space_query::ResponseData>  =res.json().await?;
-            let data = response_data.data.unwrap().organization;
+            let response_json: Response<space_query::ResponseData> = res.json().await?;
+            let response_data = response_json.data.unwrap().organization;
 
-            println!("{:}", data.name.bold());
+            println!("{:}", response_data.name.bold());
 
             println!(
                 "{:<15}{:}",
                 "Key".bold().underline(),
                 "Space name".bold().underline()
             );
-            for space in data.spaces.iter() {
+            for space in response_data.spaces.iter() {
                 println!("{:<15}{:}", space.key.yellow(), space.name.bold());
             }
         }
@@ -149,7 +149,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
                     res.error_for_status_ref()?;
 
-                    let response_data = res.json::<space_query::ResponseData>().await?;
+                    let response_json: Response<space_query::ResponseData> = res.json().await?;
+                    let response_data = response_json.data.unwrap();
 
                     for spc in response_data.organization.spaces.iter() {
                         let mut print_items = false;
@@ -192,7 +193,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
                                 res.error_for_status_ref()?;
 
-                                let response_data = res.json::<items_query::ResponseData>().await?;
+                                let response_json: Response<items_query::ResponseData> =
+                                    res.json().await?;
+                                let response_data = response_json.data.unwrap();
 
                                 has_more = response_data.work_items.has_more;
                                 cursor = Some(response_data.work_items.cursor.to_string());
@@ -253,7 +256,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
                     res.error_for_status_ref()?;
 
-                    let response_data = res.json::<space_query::ResponseData>().await?;
+                    let response_json: Response<space_query::ResponseData> = res.json().await?;
+                    let response_data = response_json.data.unwrap();
 
                     let spc = response_data
                         .organization
@@ -292,8 +296,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
                             res.error_for_status_ref()?;
 
-                            let response_data =
-                                res.json::<create_work_item::ResponseData>().await?;
+                            let response_json: Response<create_work_item::ResponseData> =
+                                res.json().await?;
+                            let response_data = response_json.data.unwrap();
 
                             let work_item_number = format!(
                                 "{:}-{:}",
@@ -320,7 +325,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
                     res.error_for_status_ref()?;
 
-                    let response_data = res.json::<space_query::ResponseData>().await?;
+                    let response_json: Response<space_query::ResponseData> = res.json().await?;
+                    let response_data = response_json.data.unwrap();
 
                     let spc = response_data
                         .organization
@@ -352,7 +358,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
                                 res.error_for_status_ref()?;
 
-                                let response_data = res.json::<items_query::ResponseData>().await?;
+                                let response_json: Response<items_query::ResponseData> =
+                                    res.json().await?;
+                                let response_data = response_json.data.unwrap();
 
                                 has_more = response_data.work_items.has_more;
                                 cursor = Some(response_data.work_items.cursor.to_string());
@@ -379,8 +387,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
                                         res.error_for_status_ref()?;
 
-                                        let response_data =
-                                            res.json::<item_query::ResponseData>().await?;
+                                        let response_json: Response<item_query::ResponseData> =
+                                            res.json().await?;
+                                        let response_data = response_json.data.unwrap();
 
                                         let item = response_data.work_item;
 
