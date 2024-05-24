@@ -261,14 +261,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                             };
                                             let rgb = Rgb::from_hex_str(&hex_color).unwrap();
                                             labels = format!(
-                                                "{:} {:}{:}",
+                                                "{:} {:}",
                                                 labels,
-                                                "#".truecolor(
+                                                label.name.truecolor(
                                                     rgb.get_red() as u8,
                                                     rgb.get_green() as u8,
                                                     rgb.get_blue() as u8
-                                                ),
-                                                label.name
+                                                )
                                             );
                                         }
 
@@ -459,14 +458,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                                 };
                                                 let rgb = Rgb::from_hex_str(&hex_color).unwrap();
                                                 labels = format!(
-                                                    "{:} {:}{:}",
+                                                    "{:} {:}",
                                                     labels,
-                                                    "#".truecolor(
+                                                    label.name.truecolor(
                                                         rgb.get_red() as u8,
                                                         rgb.get_green() as u8,
                                                         rgb.get_blue() as u8
                                                     ),
-                                                    label.name
                                                 );
                                             }
                                             println!("{}{}", "Labels:", labels);
