@@ -2,6 +2,13 @@ query OrgQuery {
   organization {
     id
     name
+    users {
+      id
+      username
+      name
+      guest
+      deactivated
+    }
   }
 }
 

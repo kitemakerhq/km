@@ -156,7 +156,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let response_json: Response<space_query::ResponseData> = res.json().await?;
             let response_data = response_json.data.unwrap().organization;
 
-            println!("{:}", response_data.name.bold());
+            println!("{:}\n", response_data.name.bold().underline());
 
             println!(
                 "{:<15}{:}",

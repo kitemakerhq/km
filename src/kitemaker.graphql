@@ -14,6 +14,9 @@ enum IntegrationType {
   ZAPIER
   INTERCOM
   SENTRY
+  EMAIL
+  VANTA
+  LINEAR
 }
 
 """
@@ -24,16 +27,6 @@ enum StatusType {
   TODO
   IN_PROGRESS
   DONE
-  ARCHIVED
-}
-
-"""
-The fixed set of time horizons for [Theme](#theme) objects
-"""
-enum ThemeHorizon {
-  NOW
-  NEXT
-  LATER
   ARCHIVED
 }
 
@@ -191,12 +184,12 @@ Actors are entities that do things like create work items, leave comments, etc. 
 union Actor = User | Integration | IntegrationUser | Application
 
 """
-Entities are the document-like types, like work items and themes
+Entities are the document-like types, like work items and initiatives
 """
-union Entity = WorkItem | Theme
+union Entity = WorkItem | Initiative
 
 """
-Comments can be made on either [WorkItem](#workitem) or [Theme](#theme) objects
+Comments can be made on either [WorkItem](#workitem) or [Initiative](#initiative) objects
 """
 type Comment {
   id: ID!
@@ -212,7 +205,7 @@ type Comment {
 }
 
 """
-Activities are found on either [WorkItem](#workitem) or [Theme](#theme) objects
+Activities are found on either [WorkItem](#workitem) or [Initiative](#initiative) objects
 """
 type Activity {
   id: ID!
@@ -248,42 +241,13 @@ type WorkItem {
   labels: [Label!]!
   comments: [Comment!]!
   activities: [Activity!]!
-  themes: [Theme!]!
+  initiatives: [Initiative!]!
   effort: String
   impact: String
   closedAt: Date
   archivedAt: Date
   updatedAt: Date!
   createdAt: Date!
-}
-
-type Theme {
-  id: ID!
-  number: String!
-  title: String!
-  actor: Actor!
-  """
-  The description of a theme as a markdown-formatted string
-  """
-  description: String!
-  """
-  Sort is a string that determines where in a particular horizon column a theme will appear
-  """
-  sort: String!
-  space: Space!
-  horizon: ThemeHorizon!
-  workItems: [WorkItem!]!
-  comments: [Comment!]!
-  activities: [Activity!]!
-  watchers: [User!]!
-  members: [User!]!
-  labels: [Label!]!
-  effort: String
-  impact: String
-  archivedAt: Date
-  updatedAt: Date!
-  createdAt: Date!
-  color: String!
 }
 
 type Person {
@@ -322,9 +286,6 @@ type Feedback {
   The content of a feedback as a markdown-formatted string
   """
   content: String!
-  """
-  Sort is a string that determines where in a particular horizon column a theme will appear
-  """
   company: Company
   person: Person
   owners: [User!]!
@@ -344,7 +305,7 @@ type Initiative {
   color: String!
   actor: Actor!
   """
-  The description of a theme as a markdown-formatted string
+  The description of an initiative as a markdown-formatted string
   """
   description: String!
 
@@ -368,6 +329,8 @@ type Roadmap {
   name: String!
   color: String!
   columns: [RoadmapColumn!]!
+  createdAt: Date!
+  updatedAt: Date!
 }
 
 type RoadmapColumn {
@@ -376,6 +339,8 @@ type RoadmapColumn {
   roadmap: Roadmap!
   columnType: RoadmapColumnStatusType!
   initiatives: [Initiative!]!
+  createdAt: Date!
+  updatedAt: Date!
 }
 
 type CodeReviewRequestDetails {
@@ -412,18 +377,6 @@ type WorkItemsQueryResult {
   hasMore: Boolean!
 }
 
-type ThemesQueryResult {
-  themes: [Theme!]!
-  """
-  An opaque string used for paging. Pass this string to the themes query to iterate through the results a page at a time
-  """
-  cursor: String!
-  """
-  Indicates if more results are available (by requerying themes, passing the cursor)
-  """
-  hasMore: Boolean!
-}
-
 type InitiativesQueryResult {
   initiatives: [Initiative!]!
   """
@@ -453,7 +406,7 @@ type RoadmapsQueryResult {
 
 type Query {
   """
-  Fetch the main organization object. Useful for finding out which users, spaces, labels, statuses, etc. are available before fetching and manipulating work items and themes
+  Fetch the main organization object. Useful for finding out which users, spaces, labels, statuses, etc. are available before fetching and manipulating work items, initiatives, and feedback
   """
   organization: Organization!
   """
@@ -478,18 +431,6 @@ type Query {
   Fetch a single [WorkItem](#workitem) by number (e.g., 'ABC-123')
   """
   workItemByNumber(number: String!): WorkItem!
-  """
-  Fetch [Theme](#theme) objects for a particular [Space](#space). This will return at most 50 themes at a time so use the paging facilities to fetch more results
-  """
-  themes(spaceId: ID, cursor: String, count: Int): ThemesQueryResult!
-  """
-  Fetch a single [Theme](#theme) by ID
-  """
-  theme(id: ID!): Theme!
-  """
-  Fetch a single [Theme](#theme) by number (e.g. 'ABC-123')
-  """
-  themeByNumber(number: String): Theme!
 
   """
   Fetch [Initiative](#initiative) objects for a particular [Organization](#organization). This will return at most 50 initiatives at a time so use the paging facilities to fetch more results
@@ -508,6 +449,8 @@ type Query {
   Fetches all [Roadmap](#roadmap) for the organization
   """
   roadmaps: RoadmapsQueryResult!
+
+  ## TODO: Add adding and remoing initiatives
 
   """
   Fetch [Initiative](#initiative) objects for a particular [Organization](#organization). This will return at most 50 initiatives at a time so use the paging facilities to fetch more results
@@ -557,6 +500,8 @@ input CreateWorkItemInput {
   labelIds: [ID!]
   effort: String
   impact: String
+  updatedAt: Date
+  createdAt: Date
 }
 
 type CreateWorkItemResult {
@@ -656,111 +601,6 @@ type CreateCommentOnWorkItemResult {
   comment: Comment!
 }
 
-input CreateThemeInput {
-  spaceId: ID!
-  title: String!
-  """
-  The sort order of the [Theme](#theme). Omitting this parameter will make the theme the first theme in the horizon column
-  """
-  sort: String
-  """
-  The [Theme](#theme) object's description as a markdown-formatted string
-  """
-  description: String
-  horizon: ThemeHorizon!
-  workItemIds: [ID!]
-  watcherIds: [ID!]
-}
-
-type CreateThemeResult {
-  theme: Theme!
-}
-
-input EditThemeInput {
-  id: ID!
-  title: String
-  """
-  The [Theme](#theme) object's description as a markdown-formatted string
-  """
-  description: String
-  """
-  DANGER: Changing the spaceId is experimental and currently removes all of a theme's work items
-  """
-  spaceId: ID
-  horizon: ThemeHorizon
-}
-
-type EditThemeResult {
-  theme: Theme!
-}
-
-input AddWorkItemsToThemeInput {
-  id: ID!
-  workItemIds: [ID!]!
-}
-
-type AddWorkItemsToThemeResult {
-  theme: Theme!
-}
-
-input RemoveWorkItemsFromThemeInput {
-  id: ID!
-  workItemIds: [ID!]!
-}
-
-type RemoveWorkItemsFromThemeResult {
-  theme: Theme!
-}
-
-input AddWatchersToThemeInput {
-  id: ID!
-  watcherIds: [ID!]!
-}
-
-type AddWatchersToThemeResult {
-  theme: Theme!
-}
-
-input RemoveWatchersFromThemeInput {
-  id: ID!
-  watcherIds: [ID!]!
-}
-
-type RemoveWatchersFromThemeResult {
-  theme: Theme!
-}
-
-input AddLabelsToThemeInput {
-  id: ID!
-  labelIds: [ID!]!
-}
-
-type AddLabelsToThemeResult {
-  theme: Theme!
-}
-
-input RemoveLabelsFromThemeInput {
-  id: ID!
-  labelIds: [ID!]!
-}
-
-type RemoveLabelsFromThemeResult {
-  theme: Theme!
-}
-
-input CreateCommentOnThemeInput {
-  id: ID!
-  body: String!
-  """
-  When creating a new comment thread, omit this property. Provide this property to add to an existing thread
-  """
-  threadId: String
-}
-
-type CreateCommentOnThemeResult {
-  comment: Comment!
-}
-
 input EditCommentInput {
   id: ID!
   body: String
@@ -806,6 +646,8 @@ input CreateFeedbackInput {
   When this property is provided, the created feedback will be automatically linked to the specified entities with a new insight
   """
   linkInsightToEntityIds: [ID!]
+  updatedAt: Date
+  createdAt: Date
 }
 
 type CreateFeedbackResult {
@@ -911,6 +753,64 @@ type EditCompanyResult {
   company: Company!
 }
 
+input CreateInitiativeInput {
+  title: String!
+  description: String
+  color: String
+  effortId: String
+  impactId: String
+
+  roadmapColumnIds: [String!]
+
+  memberIds: [String!]
+  labelIds: [String!]
+  workItemIds: [String!]
+
+  archivedAt: Date
+  updatedAt: Date
+  createdAt: Date
+}
+
+type CreateInitiativeResult {
+  initiative: Initiative!
+}
+
+input EditInitiativeInput {
+  id: ID!
+  title: String
+  description: String
+  color: String
+  effortId: String
+  impactId: String
+
+  addMemberIds: [String!]
+  removeMemberIds: [String!]
+  addLabelIds: [String!]
+  removeLabelIds: [String!]
+  addWorkItemIds: [String!]
+  removeWorkItemIds: [String!]
+}
+
+type EditInitiativeResult {
+  initiative: Initiative!
+}
+
+input AddInitiativesToRoadmapInput {
+  columnId: ID!
+  initiativeIds: [ID!]!
+}
+type AddInitiativesToRoadmapResult {
+  roadmap: Roadmap!
+}
+
+input RemoveInitiativesFromRoadmapInput {
+  columnId: ID!
+  initiativeIds: [ID!]!
+}
+type RemoveInitiativesFromRoadmapResult {
+  roadmap: Roadmap!
+}
+
 type Mutation {
   createWorkItem(input: CreateWorkItemInput!): CreateWorkItemResult!
   editWorkItem(input: EditWorkItemInput!): EditWorkItemResult!
@@ -936,6 +836,15 @@ type Mutation {
     input: CreateCommentOnWorkItemInput!
   ): CreateCommentOnWorkItemResult!
 
+  createInitiative(input: CreateInitiativeInput!): CreateInitiativeResult!
+  editInitiative(input: EditInitiativeInput!): EditInitiativeResult!
+  addInitiativesToRoadmap(
+    input: AddInitiativesToRoadmapInput!
+  ): AddInitiativesToRoadmapResult!
+  removeInitiativesFromRoadmap(
+    input: RemoveInitiativesFromRoadmapInput!
+  ): RemoveInitiativesFromRoadmapResult!
+
   createFeedback(input: CreateFeedbackInput!): CreateFeedbackResult!
   editFeedback(input: EditFeedbackInput!): EditFeedbackResult!
   addOwnersToFeedback(
@@ -960,27 +869,6 @@ type Mutation {
   removeEntitiesFromInsight(
     input: RemoveEntitiesFromInsightInput!
   ): RemoveEntitiesFromInsightResult!
-
-  createTheme(input: CreateThemeInput!): CreateThemeResult!
-  editTheme(input: EditThemeInput!): EditThemeResult!
-  addWatchersToTheme(input: AddWatchersToThemeInput!): AddWatchersToThemeResult!
-  removeWatchersFromTheme(
-    input: RemoveWatchersFromThemeInput!
-  ): RemoveWatchersFromThemeResult!
-  addWorkItemsToTheme(
-    input: AddWorkItemsToThemeInput!
-  ): AddWorkItemsToThemeResult!
-  removeWorkItemsFromTheme(
-    input: RemoveWorkItemsFromThemeInput!
-  ): RemoveWorkItemsFromThemeResult!
-  addLabelsToTheme(input: AddLabelsToThemeInput!): AddLabelsToThemeResult!
-  removeLabelsFromTheme(
-    input: RemoveLabelsFromThemeInput!
-  ): RemoveLabelsFromThemeResult!
-
-  createCommentOnTheme(
-    input: CreateCommentOnThemeInput!
-  ): CreateCommentOnThemeResult!
 
   editComment(input: EditCommentInput!): EditCommentResult!
 
