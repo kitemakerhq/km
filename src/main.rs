@@ -57,7 +57,7 @@ struct Cli {
 
 #[derive(StructOpt)]
 enum Commands {
-    /// List organization name and all spaces
+    /// List organization name, members, and all spaces
     Organization,
     /// Work items subcommands
     Item(SubCommands),
@@ -154,12 +154,36 @@ async fn main() -> Result<(), Box<dyn Error>> {
             res.error_for_status_ref()?;
 
             let response_json: Response<space_query::ResponseData> = res.json().await?;
-            let response_data = response_json.data.unwrap().organization;
-
-            println!("{:}\n", response_data.name.bold().underline());
+            let response_data: space_query::SpaceQueryOrganization =
+                response_json.data.unwrap().organization;
 
             println!(
-                "{:<15}{:}",
+                "{:} {:}\n",
+                "Organization:".bold().underline().yellow(),
+                response_data.name.bold().underline()
+            );
+
+            println!(
+                "{:<15}{:<25}{:}",
+                "Username".bold().underline(),
+                "Name".bold().underline(),
+                "Guest".bold().underline()
+            );
+
+            for user in response_data.users.iter() {
+                println!(
+                    "{:<15}{:<25}{:}",
+                    user.username.yellow(),
+                    if user.name.is_some() {
+                        user.name.as_ref().unwrap()
+                    } else {
+                        ""
+                    },
+                    if user.guest { "yes" } else { "" }
+                );
+            }
+            println!(
+                "\n{:<15}{:}",
                 "Key".bold().underline(),
                 "Space name".bold().underline()
             );

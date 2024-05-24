@@ -16,6 +16,13 @@ query SpaceQuery {
   organization {
     id
     name
+    users {
+      id
+      username
+      name
+      guest
+      deactivated
+    }
     spaces {
       id
       key
